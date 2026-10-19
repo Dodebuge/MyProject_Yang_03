@@ -8,7 +8,13 @@
     body { margin: 0; padding: 16px; background: #2b2b2b; color: #eee; font-family: sans-serif; text-align: center; }
     canvas { max-width: 100%; box-shadow: 0 4px 16px #0008; cursor: pointer; }
     #status { font-size: 1.4em; margin: 12px; }
-    button, label { font-size: 1em; padding: 6px 18px; }
+    button, label, select { font-size: 1em; padding: 6px 18px; }
+    select { max-width: 100%; }
+    #replay-panel { max-width: 576px; margin: 0 auto; }
+    #step { display: inline-block; min-width: 6em; }
+    #mistakes { text-align: left; padding-left: 1.2em; }
+    #mistakes li { cursor: pointer; padding: 2px 0; }
+    #mistakes li:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -18,7 +24,27 @@
   <p>
     <label><input type="checkbox" id="ai" checked> AI 대전 (AI = 백)</label>
     <button id="reset">다시 시작</button>
+    <button id="save">기보 저장</button>
   </p>
+  <p>
+    <select id="records" aria-label="저장된 기보"></select>
+    <button id="replay">리플레이</button>
+  </p>
+  <div id="replay-panel" hidden>
+    <p>
+      <button id="first" aria-label="처음">⏮</button>
+      <button id="prev" aria-label="이전 수">◀</button>
+      <span id="step"></span>
+      <button id="next" aria-label="다음 수">▶</button>
+      <button id="last" aria-label="마지막">⏭</button>
+    </p>
+    <p>
+      <button id="resume">여기서 다시 시작</button>
+      <button id="exit">리플레이 종료</button>
+    </p>
+    <h3>잘못 둔 수 (AI 분석, 클릭하면 이동)</h3>
+    <ul id="mistakes"></ul>
+  </div>
   <script src="gomoku.js"></script>
 </body>
 </html>

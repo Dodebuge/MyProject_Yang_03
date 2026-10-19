@@ -16,11 +16,28 @@ object GomokuAi {
         var bestScore = -1.0
         for (i in board.indices) {
             if (board[i] != 0 || !nearStone(board, i)) continue
-            // 공격에 가중치를 조금 더 줘서, 내가 이길 수 있으면 막기보다 이기기를 고른다
-            val s = score(board, i, me) * 1.1 + score(board, i, 3 - me)
+            val s = evaluate(board, i, me)
             if (s > bestScore) { bestScore = s; best = i }
         }
         return best
+    }
+
+    /** me가 빈칸 i에 두는 수의 점수. 공격에 가중치를 조금 더 줘서, 이길 수 있으면 막기보다 이기기를 고른다 */
+    fun evaluate(board: IntArray, i: Int, me: Int): Double = score(board, i, me) * 1.1 + score(board, i, 3 - me)
+
+    /** 한 수의 분석 결과. best = 그 시점 AI 추천 수, loss = 추천 수 대비 잃은 점수 (0이면 최선) */
+    class Review(val best: Int, val loss: Double)
+
+    /** 기보(흑부터 번갈아 둔 board 인덱스 목록)의 각 수를 그 시점 최선 수와 비교한다 */
+    fun review(moves: IntArray): List<Review> {
+        val board = IntArray(N * N)
+        return moves.mapIndexed { k, played ->
+            val me = if (k % 2 == 0) 1 else 2
+            val best = bestMove(board, me)
+            val loss = if (best < 0) 0.0 else maxOf(0.0, evaluate(board, best, me) - evaluate(board, played, me))
+            board[played] = me
+            Review(best, loss)
+        }
     }
 
     /** 주변 2칸 안에 돌이 있는 칸만 후보로 본다 */
