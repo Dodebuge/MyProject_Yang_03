@@ -1,15 +1,19 @@
 import kotlinx.browser.document
-import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import org.w3c.dom.CanvasRenderingContext2D
+import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.HTMLSelectElement
 import org.w3c.dom.Worker
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
+import org.w3c.dom.url.URL
+import org.w3c.files.Blob
+import org.w3c.files.BlobPropertyBag
+import org.w3c.files.File
+import org.w3c.files.get
 import kotlin.js.Date
 import kotlin.js.json
 import kotlin.math.PI
@@ -18,7 +22,6 @@ import kotlin.math.roundToInt
 const val CELL = 36.0
 const val SIZE = CELL * (N + 1)
 const val AI = 2 // AI는 백
-const val RECORDS_KEY = "gomoku.records"
 
 val board = IntArray(N * N)
 val moves = mutableListOf<Int>() // 기보: 흑부터 번갈아 둔 board 인덱스
@@ -35,7 +38,7 @@ val canvas = document.getElementById("board") as HTMLCanvasElement
 val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
 val status = document.getElementById("status")!!
 val aiToggle = document.getElementById("ai") as HTMLInputElement
-val recordSelect = document.getElementById("records") as HTMLSelectElement
+val fileInput = document.getElementById("record-file") as HTMLInputElement
 val replayPanel = document.getElementById("replay-panel") as HTMLElement
 val stepLabel = document.getElementById("step")!!
 val mistakeList = document.getElementById("mistakes")!!
@@ -138,46 +141,37 @@ fun reset() {
     draw()
 }
 
-// ---- 기보 저장 (브라우저 localStorage, 이 브라우저에서만 보인다) ----
+// ---- 기보 파일 (.dat, 포맷은 Kifu.kt) ----
 
-fun loadRecords(): Array<dynamic> = try {
-    localStorage.getItem(RECORDS_KEY)?.let { JSON.parse<Array<dynamic>>(it) } ?: emptyArray()
-} catch (e: Throwable) {
-    emptyArray()
-}
-
-fun refreshRecordSelect() {
-    recordSelect.innerHTML = ""
-    val records = loadRecords()
-    if (records.isEmpty()) recordSelect.appendChild(document.createElement("option").also { it.textContent = "저장된 기보 없음" })
-    for (i in records.indices.reversed()) { // 최신 기보가 위로
-        val option = document.createElement("option")
-        option.setAttribute("value", i.toString())
-        option.textContent = records[i].name as String
-        recordSelect.appendChild(option)
-    }
-}
-
+/** 현재 기보를 gomoku-YYYYMMDD-HHMMSS.dat 파일로 내려받는다 */
 fun saveRecord() {
     if (moves.isEmpty()) return
-    val result = if (over) "${colorName(turn)} 승" else "진행 중"
-    val name = "${Date().toLocaleString()} · ${moves.size}수 · $result"
-    val records = loadRecords() + json("name" to name, "moves" to moves.toTypedArray())
-    try {
-        localStorage.setItem(RECORDS_KEY, JSON.stringify(records))
-        refreshRecordSelect()
-        status.textContent = "기보 저장됨: $name"
-    } catch (e: Throwable) {
-        status.textContent = "기보를 저장하지 못했습니다 (브라우저 저장소 사용 불가)"
+    val d = Date()
+    fun two(n: Int) = n.toString().padStart(2, '0')
+    val name = "gomoku-${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-" +
+        "${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}.dat"
+    val a = document.createElement("a") as HTMLAnchorElement
+    a.href = URL.createObjectURL(Blob(arrayOf(toDat(moves)), BlobPropertyBag(type = "text/plain")))
+    a.download = name
+    a.click()
+    URL.revokeObjectURL(a.href)
+    status.textContent = "기보 저장됨: $name (${moves.size}수)"
+}
+
+/** 고른 .dat 파일을 읽어 리플레이를 연다 */
+fun loadRecordFile(file: File) {
+    file.asDynamic().text().then { text: String ->
+        try {
+            startReplay(parseDat(text))
+        } catch (e: IllegalArgumentException) {
+            status.textContent = "기보 파일 오류: ${e.message}"
+        }
     }
 }
 
 // ---- 리플레이 ----
 
-fun startReplay() {
-    val record = loadRecords().getOrNull(recordSelect.value.toIntOrNull() ?: return) ?: return
-    val src = record.moves
-    val r = IntArray(src.length as Int) { (src[it] as Number).toInt() }
+fun startReplay(r: IntArray) {
     replay = r
     review = null
     replayPanel.hidden = false
@@ -270,7 +264,11 @@ fun main() {
     aiToggle.addEventListener("change", { draw(); askAi() })
     button("reset") { reset() }
     button("save") { saveRecord() }
-    button("replay") { startReplay() }
+    button("load") { fileInput.click() }
+    fileInput.addEventListener("change", {
+        fileInput.files?.get(0)?.let { loadRecordFile(it) }
+        fileInput.value = "" // 같은 파일을 다시 골라도 change가 오도록
+    })
     button("first") { showStep(0) }
     button("prev") { showStep(step - 1) }
     button("next") { showStep(step + 1) }
@@ -285,6 +283,5 @@ fun main() {
             "ArrowRight" -> showStep(step + 1)
         }
     })
-    refreshRecordSelect()
     draw()
 }

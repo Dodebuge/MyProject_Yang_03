@@ -8,8 +8,7 @@
     body { margin: 0; padding: 16px; background: #2b2b2b; color: #eee; font-family: sans-serif; text-align: center; }
     canvas { max-width: 100%; box-shadow: 0 4px 16px #0008; cursor: pointer; }
     #status { font-size: 1.4em; margin: 12px; }
-    button, label, select { font-size: 1em; padding: 6px 18px; }
-    select { max-width: 100%; }
+    button, label { font-size: 1em; padding: 6px 18px; }
     #replay-panel { max-width: 576px; margin: 0 auto; }
     #step { display: inline-block; min-width: 6em; }
     #mistakes { text-align: left; padding-left: 1.2em; }
@@ -24,11 +23,11 @@
   <p>
     <label><input type="checkbox" id="ai" checked> AI 대전 (AI = 백)</label>
     <button id="reset">다시 시작</button>
-    <button id="save">기보 저장</button>
+    <button id="save">기보 저장 (.dat)</button>
   </p>
   <p>
-    <select id="records" aria-label="저장된 기보"></select>
-    <button id="replay">리플레이</button>
+    <button id="load">기보 불러오기 (.dat) → 리플레이</button>
+    <input type="file" id="record-file" accept=".dat,text/plain" hidden>
   </p>
   <div id="replay-panel" hidden>
     <p>
