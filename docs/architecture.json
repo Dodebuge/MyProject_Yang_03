@@ -7,29 +7,34 @@
   },
   "components": [
     { "id": "player", "type": "external", "label": "플레이어", "sublabel": "마우스 클릭", "pos": [40, 300], "size": [130, 60] },
-    { "id": "html", "type": "frontend", "label": "index.html", "sublabel": "canvas + 버튼", "pos": [250, 300], "size": [130, 60] },
-    { "id": "main", "type": "frontend", "label": "Main.kt", "sublabel": "이벤트 · 렌더링", "pos": [460, 300], "size": [130, 60] },
-    { "id": "rules", "type": "backend", "label": "Gomoku.kt", "sublabel": "isWin() 판정", "pos": [670, 300], "size": [130, 60] },
+    { "id": "html", "type": "frontend", "label": "index.html", "sublabel": "canvas · AI 토글", "pos": [250, 300], "size": [130, 60] },
+    { "id": "main", "type": "frontend", "label": "Main.kt", "sublabel": "상태 · 입력 · 렌더링", "pos": [460, 300], "size": [130, 60] },
     { "id": "canvas", "type": "frontend", "label": "Canvas 2D", "sublabel": "바둑판 · 돌", "pos": [460, 150], "size": [130, 60] },
-    { "id": "board", "type": "database", "label": "board", "sublabel": "IntArray(15×15)", "pos": [460, 450], "size": [130, 60] },
-    { "id": "test", "type": "external", "label": "GomokuTest.kt", "sublabel": "jsNodeTest", "pos": [890, 300], "size": [130, 60] },
-    { "id": "gradle", "type": "cloud", "label": "Gradle", "sublabel": "Kotlin/JS → webpack", "pos": [40, 450], "size": [130, 60] }
+    { "id": "rules", "type": "backend", "label": "Gomoku.kt", "sublabel": "isWin() 판정", "pos": [460, 450], "size": [130, 60] },
+    { "id": "worker", "type": "messagebus", "label": "Worker.kt", "sublabel": "ai.js 진입점", "pos": [720, 300], "size": [130, 60] },
+    { "id": "engine", "type": "backend", "label": "GomokuAi.kt", "sublabel": "bestMove()", "pos": [940, 300], "size": [130, 60] },
+    { "id": "aitest", "type": "external", "label": "GomokuAiTest.kt", "sublabel": ":ai:jsNodeTest", "pos": [940, 450], "size": [130, 60] },
+    { "id": "test", "type": "external", "label": "GomokuTest.kt", "sublabel": "jsNodeTest", "pos": [40, 450], "size": [130, 60] },
+    { "id": "gradle", "type": "cloud", "label": "Gradle", "sublabel": "webpack 번들", "pos": [40, 150], "size": [130, 60] }
   ],
   "boundaries": [
-    { "kind": "region", "label": "브라우저", "wraps": ["html", "main", "rules", "canvas", "board"] }
+    { "kind": "region", "label": "메인 스레드 (게임)", "wraps": ["html", "main", "canvas", "rules"] },
+    { "kind": "region", "label": "Web Worker (:ai 모듈)", "wraps": ["worker", "engine"] }
   ],
   "connections": [
     { "id": "click", "from": "player", "to": "html", "label": "클릭", "variant": "emphasis" },
-    { "id": "event", "from": "html", "to": "main", "label": "click 이벤트", "variant": "emphasis" },
-    { "id": "check", "from": "main", "to": "rules", "label": "isWin(x, y)", "variant": "emphasis" },
+    { "id": "event", "from": "html", "to": "main", "label": "이벤트", "variant": "emphasis" },
     { "id": "draw", "from": "main", "to": "canvas", "label": "draw()", "fromSide": "top", "toSide": "bottom" },
-    { "id": "state", "from": "main", "to": "board", "label": "착수 기록", "labelDy": 24, "fromSide": "bottom", "toSide": "top" },
+    { "id": "check", "from": "main", "to": "rules", "label": "isWin(x, y)", "labelDy": 24, "fromSide": "bottom", "toSide": "top" },
+    { "id": "request", "from": "main", "to": "worker", "label": "postMessage", "variant": "emphasis" },
+    { "id": "call", "from": "worker", "to": "engine", "label": "호출" },
+    { "id": "aiverify", "from": "aitest", "to": "engine", "label": "검증", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
     { "id": "verify", "from": "test", "to": "rules", "label": "검증", "variant": "dashed" },
-    { "id": "bundle", "from": "gradle", "to": "html", "label": "gomoku.js", "variant": "dashed", "fromSide": "right", "toSide": "bottom" }
+    { "id": "bundle", "from": "gradle", "to": "html", "label": "gomoku.js · ai.js", "variant": "dashed", "fromSide": "right", "toSide": "top" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "화면", "items": ["index.html이 gomoku.js를 로드", "Main.kt가 클릭 좌표 → 교차점 변환 후 다시 그리기"] },
-    { "dot": "emerald", "title": "규칙", "items": ["Gomoku.kt는 DOM 없는 순수 함수", "4방향으로 같은 색 5개 이상이면 승리"] },
-    { "dot": "amber", "title": "빌드 · 테스트", "items": ["Gradle이 Kotlin/JS를 webpack 번들로 빌드", "GomokuTest.kt가 Node에서 isWin 검증"] }
+    { "dot": "cyan", "title": "메인 스레드", "items": ["Main.kt가 클릭 → 착수 → isWin 판정 → 다시 그리기", "AI 차례면 워커에 {id, board, me} 전송, {id, move} 응답으로 착수"] },
+    { "dot": "emerald", "title": "AI 라이브러리 (:ai)", "items": ["GomokuAi.bestMove()는 DOM 없는 순수 함수", "Worker.kt는 메시지 ↔ 함수 호출만 하는 어댑터"] },
+    { "dot": "amber", "title": "교체 가능", "items": ["같은 프로토콜을 따르는 C++(WASM)·Python(Pyodide) 워커로 바꿔 끼울 수 있음", "Gradle이 ai.js를 게임 옆에 복사"] }
   ]
 }

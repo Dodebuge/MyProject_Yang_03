@@ -14,3 +14,8 @@ kotlin {
         jsTest.dependencies { implementation(kotlin("test")) }
     }
 }
+
+// AI 워커 번들(ai.js)을 게임 리소스 옆에 복사 → new Worker("ai.js")로 로드
+tasks.named<Copy>("jsProcessResources") {
+    from(project(":ai").tasks.named("jsBrowserDistribution"))
+}
